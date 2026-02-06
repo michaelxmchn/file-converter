@@ -53,6 +53,20 @@
       "description": "支持 PDF 转换为 PowerPoint 演示文稿",
       "status": "pending",
       "created_at": "2026-02-06T22:30:56.138141"
+    },
+    {
+      "id": 8,
+      "title": "远程控制服务",
+      "description": "RustDesk 自建服务器，支持远程桌面控制",
+      "status": "pending",
+      "created_at": "2026-02-06T22:37:30.264879"
+    },
+    {
+      "id": 9,
+      "title": "内网穿透服务",
+      "description": "配置 Cloudflare Tunnel/FRP，让本地服务可被公网访问",
+      "status": "pending",
+      "created_at": "2026-02-06T22:58:58.769127"
     }
   ],
   "discussions": []
