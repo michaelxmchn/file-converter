@@ -21,6 +21,7 @@ import asyncio
 
 # 导入转换模块
 from scripts.pdf_handler import pdf_to_word
+from scripts.pdf_to_ppt import pdf_to_ppt
 
 # 配置路径
 BASE_DIR = Path(__file__).parent
@@ -302,6 +303,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <input type="file" id="fileInput" accept=".pdf">
             </div>
             
+            <div class="form-group">
+                <label>转换类型</label>
+                <select id="convertType" onchange="updateConvertBtn()">
+                    <option value="ppt">📄 PDF 转 PPT (演示文稿)</option>
+                    <option value="word">📝 PDF 转 Word (文档)</option>
+                </select>
+            </div>
+            
             <div class="file-info" id="fileInfo">
                 <div class="file-name" id="fileName"></div>
                 <div class="progress">
@@ -317,15 +326,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             
             <div class="download-link" id="downloadLink">
                 <p>✅ 转换完成！</p>
-                <a id="downloadBtn" class="btn" href="#" download>📥 下载 Word 文件</a>
+                <a id="downloadBtn" class="btn" href="#" download>📥 下载文件</a>
             </div>
             
             <div class="features">
                 <h3>✨ 支持的功能</h3>
                 <ul>
+                    <li>PDF 转 PPT (.pptx)</li>
                     <li>PDF 转 Word (.docx)</li>
                     <li>保留原始格式和布局</li>
-                    <li>支持批量转换</li>
                     <li>本地处理，保护隐私</li>
                 </ul>
             </div>
@@ -366,7 +375,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="features">
                 <h3>📋 已实现的功能</h3>
                 <ul id="implementedList">
-                    <li>PDF 转 Word (.docx)</li>
+                    <li>✅ PDF 转 PPT (.pptx) - 新功能！</li>
+                    <li>✅ PDF 转 Word (.docx)</li>
                 </ul>
             </div>
         </div>
@@ -479,6 +489,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             document.getElementById('status').textContent = text;
         }
         
+        function updateConvertBtn() {
+            const type = document.getElementById('convertType').value;
+            const btn = document.getElementById('convertBtn');
+            if (type === 'ppt') {
+                btn.innerHTML = '📊 转换为 PPT';
+            } else {
+                btn.innerHTML = '📝 转换为 Word';
+            }
+        }
+        
         function clearAll() {
             selectedFile = null;
             document.getElementById('fileInput').value = '';
@@ -491,17 +511,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             if (!selectedFile) return;
             
             const btn = document.getElementById('convertBtn');
+            const convertType = document.getElementById('convertType').value;
             btn.disabled = true;
             updateStatus('正在上传文件...');
             
             try {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
+                formData.append('type', convertType);
                 
                 updateProgress(20);
                 updateStatus('正在转换中，请稍候...');
                 
-                const response = await fetch('/convert', {
+                const response = await fetch('/convert/' + convertType, {
                     method: 'POST',
                     body: formData
                 });
@@ -518,6 +540,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 updateStatus('转换完成！');
                 
                 document.getElementById('downloadBtn').href = '/download/' + result.filename;
+                document.getElementById('downloadBtn').innerHTML = convertType === 'ppt' ? '📥 下载 PPT 文件' : '📥 下载 Word 文件';
                 document.getElementById('downloadLink').style.display = 'block';
                 
             } catch (error) {
@@ -541,7 +564,24 @@ async def read_root():
 
 @app.post("/convert")
 async def convert_pdf(file: UploadFile = File(...)):
+    """处理 PDF 转 Word 请求（默认转为 Word）"""
+    return await convert_file(file, "word")
+
+
+@app.post("/convert/ppt")
+async def convert_pdf_to_ppt(file: UploadFile = File(...)):
+    """处理 PDF 转 PPT 请求"""
+    return await convert_file(file, "ppt")
+
+
+@app.post("/convert/word")
+async def convert_pdf_to_word(file: UploadFile = File(...)):
     """处理 PDF 转 Word 请求"""
+    return await convert_file(file, "word")
+
+
+async def convert_file(file: UploadFile = File(...), convert_type: str = "word"):
+    """通用文件转换处理函数"""
     
     # 验证文件类型
     if not file.filename.lower().endswith('.pdf'):
@@ -550,7 +590,13 @@ async def convert_pdf(file: UploadFile = File(...)):
     # 生成唯一文件名
     file_id = str(uuid.uuid4())
     input_filename = f"{file_id}_{file.filename}"
-    output_filename = f"{file_id}_{file.filename.replace('.pdf', '.docx')}"
+    
+    if convert_type == "ppt":
+        output_filename = f"{file_id}_{file.filename.replace('.pdf', '.pptx')}"
+        output_media_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    else:
+        output_filename = f"{file_id}_{file.filename.replace('.pdf', '.docx')}"
+        output_media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     
     input_path = UPLOAD_DIR / input_filename
     output_path = OUTPUT_DIR / output_filename
@@ -563,10 +609,17 @@ async def convert_pdf(file: UploadFile = File(...)):
         
         # 执行转换
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: pdf_to_word(str(input_path), str(output_path))
-        )
+        
+        if convert_type == "ppt":
+            result = await loop.run_in_executor(
+                None,
+                lambda: pdf_to_ppt(str(input_path), str(output_path))
+            )
+        else:
+            result = await loop.run_in_executor(
+                None,
+                lambda: pdf_to_word(str(input_path), str(output_path))
+            )
         
         if result["success"]:
             return {
@@ -593,10 +646,17 @@ async def download_file(filename: str):
     file_path = OUTPUT_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="文件不存在")
+    
+    # 根据文件扩展名确定媒体类型
+    if filename.endswith('.pptx'):
+        media_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    else:
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    
     return FileResponse(
         path=file_path,
         filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        media_type=media_type
     )
 
 
@@ -632,7 +692,7 @@ async def submit_request(request: FeatureRequest):
         with open(REQUESTS_FILE, 'w', encoding='utf-8') as f:
             json.dump(requests_data, f, ensure_ascii=False, indent=2)
         
-        # 打印到控制台（方便查看）
+        # 打印到控制台
         priority_text = {"high": "🔥 急需", "normal": "📋 一般需求", "low": "🕐 有空再做"}
         print("\n" + "="*50)
         print(f"📨 **新功能需求已提交**")
@@ -644,7 +704,25 @@ async def submit_request(request: FeatureRequest):
         print(f"\n描述:\n{request.description}")
         print("="*50 + "\n")
         
-        return {"success": True, "message": "需求已提交！请在运行服务的终端查看需求详情。"}
+        # 发送 Discord 通知给管理员
+        try:
+            from tools import message
+            notify_msg = f"""📨 **新功能需求提交**
+
+**标题:** {request.title}
+**优先级:** {priority_text.get(request.priority, '📋 一般需求')}
+**联系方式:** {request.contact or '未填写'}
+**时间:** {new_request['created_at']}
+
+**需求描述:**
+{request.description}
+"""
+            message(action="send", message=notify_msg)
+            print("✅ Discord 通知已发送\n")
+        except Exception as msg_err:
+            print(f"⚠️  Discord 通知发送失败: {msg_err}\n")
+        
+        return {"success": True, "message": "需求已提交！管理员已收到通知。"}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"提交失败: {str(e)}")

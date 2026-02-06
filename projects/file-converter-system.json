@@ -32,6 +32,27 @@
       "description": "已搭建 Git 备份框架，支持一键回滚",
       "status": "pending",
       "created_at": "2026-02-06T21:44:31.061467"
+    },
+    {
+      "id": 5,
+      "title": "GitHub 远程仓库",
+      "description": "已配置 GitHub 远程仓库，支持代码备份",
+      "status": "pending",
+      "created_at": "2026-02-06T21:59:27.979062"
+    },
+    {
+      "id": 6,
+      "title": "OpenClaw 备份仓库",
+      "description": "已创建 openclaw-backup 仓库，敏感信息本地存储",
+      "status": "pending",
+      "created_at": "2026-02-06T22:04:02.095980"
+    },
+    {
+      "id": 7,
+      "title": "PDF 转 PPT 功能",
+      "description": "支持 PDF 转换为 PowerPoint 演示文稿",
+      "status": "pending",
+      "created_at": "2026-02-06T22:30:56.138141"
     }
   ],
   "discussions": []
