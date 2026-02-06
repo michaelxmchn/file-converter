@@ -1,0 +1,31 @@
+{
+  "name": "file-converter-system",
+  "description": "局域网文件转换服务平台，支持PDF转Word和功能需求提交",
+  "created_at": "2026-02-06T21:26:07.264834",
+  "updated_at": "2026-02-06T21:26:07.265884",
+  "status": "active",
+  "milestones": [
+    {
+      "id": 1,
+      "title": "文件转换核心功能",
+      "description": "PDF转Word核心功能已完成",
+      "status": "pending",
+      "created_at": "2026-02-06T21:26:10.120672"
+    },
+    {
+      "id": 2,
+      "title": "需求提交页面",
+      "description": "用户可在网页提交功能需求",
+      "status": "pending",
+      "created_at": "2026-02-06T21:26:19.780422"
+    },
+    {
+      "id": 3,
+      "title": "管理员接收需求",
+      "description": "需求自动保存并在控制台显示",
+      "status": "pending",
+      "created_at": "2026-02-06T21:26:19.869680"
+    }
+  ],
+  "discussions": []
+}
