@@ -1,5 +1,7 @@
 # 📄 File Converter System
 
+[![GitHub](https://img.shields.io/badge/GitHub-michaelxmchn%2Ffile-converter-blue)](https://github.com/michaelxmchn/file-converter)
+
 局域网文件转换服务平台 - 支持功能需求提交和项目管理
 
 ## 🎯 功能特性
